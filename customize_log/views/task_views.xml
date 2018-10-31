@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="customize_log_task_view_form" model="ir.ui.view">
+    	<field name="name">任务表单</field>
+    	<field name="model">customize_log.task</field>
+    	<field name="priority" eval="16"/>
+		<field name="arch" type="xml">
+			<form string="创建任务">
+				<header>
+					<button name='action_active_task'  string="激活" type="object" class="oe_highlight"
+					attrs="{'invisible':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+
+					<button name='action_process' string="办理" type="object" class="oe_highlight"
+                    attrs="{'invisible':[('state', 'in', ('draft','process','pause','done','cancel'))]}"/>
+
+
+					<button name='action_stop_task' string="暂停" type="object" class="oe_highlight"
+					attrs="{'invisible':[('state', 'in', ('draft','dealt','pause','done','cancel'))]}"/>
+
+                    <button name="action_restart_task" string="重新开始" type="object" class="oe_highlight"
+                    attrs="{'invisible':[('state', 'in', ('draft','dealt','process','done','cancel'))]}"/>
+
+					<button name='action_finish_task' string="完成" type="object" class="oe_highlight"
+					attrs="{'invisible':[('state', 'in', ('draft','dealt','pause','done','cancel'))]}"/>
+
+                     <button name='action_cancel_task' string="取消" type="object"
+					attrs="{'invisible':[('state', 'in', ('done','cancel'))]}"/>
+
+					<field name="state" widget="statusbar" statusbar_visible="draft,dealt,process,done"/>
+				</header>
+				<sheet>
+					<group>
+						<group>
+							<field name="content"
+								   attrs="{'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+							<field name="content_kind" attrs="{'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+							<field name="user_id" readonly="1"/>
+							<field name="task_level" attrs="{'readonly':[('state', 'in', ('process','pause','done','cancel'))]}"/>
+                            <!--状态为待办理,进行中, 已完成的时候,内容,开始时间,持续时间为只读-->
+							<field name="start_date" attrs="{'invisible':[('task_kind','=', 'view')],
+							'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+							<field name="duration" attrs="{'invisible':[('task_kind','=', 'view')],
+							'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}" placeholder="以小时为单位"/>
+							<field name="end_date" readonly="1"
+							attrs="{'invisible':[('state', 'in', ('draft','dealt','process','pause','cancel'))]}"/>
+							<field name="cancel_date" readonly="1"
+							attrs="{'invisible':[('state', 'in', ('draft','dealt','process','pause','done'))]}"/>
+						</group>
+						<group>
+							<field name="task_department"/>
+							<field name="task_kind" attrs="{'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+							<field name="distribution"
+								   groups="hr.group_hr_user"
+								   attrs="{'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+							<field name="prestart_date" attrs="{'invisible':[('task_kind','=', 'standard')]}"/>
+							<field name="preend_date" attrs="{'invisible':[('task_kind','=', 'standard')]}"/>
+							<field name="executor" attrs="{'readonly':[('state', 'in', ('process','pause','done','cancel'))]}"
+								   options='{"no_open": True, "no_create": True}'/>
+							<field name="receive"
+								   attrs="{'readonly':[('task_level','=', 'personal')],
+								   'invisible':[('task_kind','=', 'view')]}"/>
+						</group>
+					</group>
+					<notebook>
+						<page string="任务描述">
+							<field name="description"
+							   attrs="{'readonly':[('state', 'in', ('dealt','process','pause','done','cancel'))]}"/>
+						</page>
+						<page string="结果描述">
+							 <field name="image" attrs="{'invisible':['|', ('task_kind','=', 'view'),('state', 'in', ('draft', 'dealt'))],
+                    		'readonly':[('state', 'in', ('pause','done','cancel'))]}" placeholder="工作内容截图"/>
+						</page>
+					</notebook>
+
+					<!--当状态为完成或取消的时候,设置为只读-->
+                    <field name="pause_time" attrs="{'invisible':[('state', 'in', ('draft','dealt'))],
+                    'readonly':[('state', 'in', ('done','cancel'))]}"/>
+                    <sheet>
+                        <group>
+                            <field name="cancel_kind"
+                                   attrs="{'invisible':[('state', 'in', ('draft','dealt','process','done','pause'))]}"/>
+                            <field name="cancel_reason"
+                                   attrs="{'invisible':[('state', 'in', ('draft','dealt','process','done','pause'))]}"/>
+                        </group>
+                    </sheet>
+				</sheet>
+			</form>
+		</field>
+    </record>
+
+    <record id="customize_log_task_view_tree" model="ir.ui.view">
+    	<field name="name">任务列表</field>
+    	<field name="model">customize_log.task</field>
+    	<field name="priority" eval="16"/>
+    	<field name="arch" type="xml">
+    		<tree string="任务列表">
+				<field name="user_id"/>
+				<field name="executor"/>
+				<field name="job"/>
+				<field name="task_level"/>
+				<field name="task_department"/>
+				<field name="state"/>
+    		</tree>
+    	</field>
+    </record>
+
+	<record id="task_view_search" model="ir.ui.view">
+		<field name="name">添加搜索视图</field>
+		<field name="model">customize_log.task</field>
+		<field name="priority" eval="16"/>
+		<field name="arch" type="xml">
+			<search>
+				<field name="user_id"/>
+				<filter name='by_state' string="待办理" domain="[('state', '=', 'dealt')]"/>
+				<filter string="进行中" domain="[('state', '=', 'process')]"/>
+				<filter string="未激活" domain="[('state', '=', 'draft')]"/>
+				<filter string="已完成" domain="[('state', '=', 'done')]"/>
+				<filter string="今日任务" separator="1"
+						domain="[('create_date','&lt;=', (datetime.date.today()).strftime('%%Y-%%m-%%d')),('create_date','&gt;=',(datetime.date.today()).strftime('%%Y-%%m-%%d'))]"
+                         help="Checked-Out today"/>
+			</search>
+		</field>
+	</record>
+
+    <record id="customize_log_task_action" model="ir.actions.act_window">
+    	<field name="name">工作任务</field>
+    	<field name="res_model">customize_log.task</field>
+    	<field name="view_type">form</field>
+    	<field name="view_mode">tree,form</field>
+		<field name="context" eval="{'search_default_by_state': 1}"/>
+    	<field name="search_view_id" ref="task_view_search"/>
+    </record>
+
+	<menuitem
+		id="customize_log_task_menu_root"
+		name="工作日志"
+		sequence="5"
+	/>
+
+    <menuitem
+    	id="customize_log_task_menu_action"
+    	name="工作任务"
+    	parent="customize_log_task_menu_root"
+    	action="customize_log_task_action"
+    	sequence="10"
+    />
+
+	<menuitem
+		id="today_daily_work_menu_action"
+		name="今日日志"
+		parent="customize_log_task_menu_root"
+		sequence="10"
+	/>
+
+	<menuitem
+		id="otherday_daily_work_menu_action"
+		name="自定义时间日志"
+		parent="customize_log_task_menu_root"
+		sequence="12"
+	/>
+
+</odoo>
